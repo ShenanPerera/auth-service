@@ -3,19 +3,17 @@ import { Role } from 'src/role/enums/role.enum';
 
 @Schema()
 export class User {
-    @Prop({required : true})
-    fullName: string;
-    
-    @Prop({unique: true})
-    email: string;
-    
-    @Prop({required : true})
-    password: string;
+  @Prop({ required: true })
+  fullName: string;
 
-    @Prop({required : true})
-    role:Role;
+  @Prop({ unique: true })
+  email: string;
+
+  @Prop({ required: true })
+  password: string;
+
+  @Prop({ required: true })
+  role: Role;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
-
-
