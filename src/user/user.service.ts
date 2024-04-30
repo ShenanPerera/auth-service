@@ -4,10 +4,12 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './schema/user.schema';
 import mongoose, { Model } from 'mongoose';
 
+export type user = any;
+
 @Injectable()
 export class UserService {
   constructor(@Inject('USER_MODEL') private userModel: Model<User>) {
-    mongoose.set('debug', true);
+    // mongoose.set('debug', true);
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {

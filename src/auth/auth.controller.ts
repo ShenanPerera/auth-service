@@ -8,6 +8,6 @@ export class AuthController {
     // @UseGuards(LocalAuthGuard) ------> This is the guard that we are using to protect the login route-result = unauthorized
     @Post('login')
     async login(@Request() req){
-        return this.authService.login(req.user);
+        return this.authService.login(req.body);
     }
 }
