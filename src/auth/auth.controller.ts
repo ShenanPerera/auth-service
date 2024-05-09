@@ -13,8 +13,9 @@ export class AuthController {
   }
 
   //OAUth2.0
-  @Get('google/login')
+
   @UseGuards(GoogleAuthGuard)
+  @Get('google/login')
   handleGoogleLogin() {
     return { msg: 'This route is protected by Google OAuth2.0' };
   }
