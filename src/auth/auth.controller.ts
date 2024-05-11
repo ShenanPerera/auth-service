@@ -1,27 +1,54 @@
-import { Controller, UseGuards, Request, Post, Get } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { AuthService } from './auth.service';
-import { GoogleAuthGuard } from './utils/Guards';
-
+/* eslint-disable prettier/prettier */
+import { HttpService } from '@nestjs/axios';
+import { Controller, Headers, Post } from '@nestjs/common';
+import { Observable, map } from 'rxjs';
+import { UserService } from 'src/user/user.service';
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
-  // @UseGuards(LocalAuthGuard) ------> This is the guard that we are using to protect the login route-result = unauthorized
+  // constructor(private readonly userService: UserService) {}
+
+  // @Post('login')
+  // login(@Headers('access_token') accessToken: string): string {
+  //   const access_token = accessToken;
+  //   return access_token;
+  // }
+
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly userService: UserService,
+  ) {}
+
   @Post('login')
-  async login(@Request() req) {
-    return this.authService.login(req.body);
-  }
+  async login(@Headers('access_token') accessToken: string): Promise<any> {
+    const userInfoUrl = `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`;
 
-  //OAUth2.0
+    // console.log(userInfoUrl);
+    // const user =  this.httpService
+    //   .get(userInfoUrl)
+    //   .pipe(map((response) => response.data));
+    //   console.log(user);
+    // return user;
 
-  @UseGuards(GoogleAuthGuard)
-  @Get('google/login')
-  handleGoogleLogin() {
-    return { msg: 'This route is protected by Google OAuth2.0' };
-  }
+    try {
+      const response = await this.httpService.get(userInfoUrl).toPromise();
+      const userData = response.data;
 
-  @Get('google/redirect')
-  handleRedirect() {
-    return { msg: 'OK, you are redirected to the google login page.' };
+      const userExists = await this.userService.findOne(userData.emailk);
+      if (!userExists) {
+        await this.userService.create();
+      }
+
+      // Process user data here
+      console.log('User Data:', userData);
+      // const createUserUrl = `http://localhost:3000/api/user/{userData}}`;
+      // const newUserResponse = await this.userService.create(createUserUrl).toPromise();
+
+      // Optionally, you can return a response to the client indicating success
+      return { success: true };
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      // Optionally, you can return an error response to the client
+      return { success: false, error: 'Failed to fetch user data' };
+    }
   }
 }

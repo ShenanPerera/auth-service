@@ -12,9 +12,11 @@ export class UserService {
     // mongoose.set('debug', true);
   }
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const createdUser = await this.userModel.create(createUserDto);
-    return createdUser;
+  async create(): Promise<User> {
+    // const createdUser = await this.userModel.create(createUserDto);
+    // return createdUser;
+    console.log('create new user');
+    return null;
   }
 
   async findAll(): Promise<User[]> {
@@ -22,8 +24,8 @@ export class UserService {
     return users;
   }
 
-  async findOne(id: string): Promise<User> {
-    const user = await this.userModel.findById(id);
+  async findOne(email: string): Promise<User> {
+    const user = await this.userModel.findOne({ email });
     return user;
   }
 

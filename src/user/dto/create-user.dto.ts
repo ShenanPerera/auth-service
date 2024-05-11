@@ -14,5 +14,10 @@ export class CreateUserDto {
   @IsNotEmpty()
   readonly password: string;
 
+  @IsString()
+  @IsNotEmpty()
+  @Length(10, 10)
+  readonly phone: string;
+
   readonly role: string;
 }
