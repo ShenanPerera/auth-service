@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, HttpException } from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './schema/user.schema';
 import { Model } from 'mongoose';
@@ -24,7 +24,7 @@ export class UserService {
     try {
       const userExists = await this.findOne(email);
       if (!userExists) {
-        return { sucess: false, error: 'User does not exist' };
+        throw new HttpException('User does not exist', 404);
       }
       userExists.phone = userDto.phone;
       userExists.role = userDto.role.toUpperCase();
@@ -33,7 +33,7 @@ export class UserService {
 
       return { sucess: true, user: updatedUser };
     } catch (error) {
-      return { sucess: false, error: 'Failed to update user' };
+      throw new HttpException('Failed to update user', 500);
     }
   }
 
@@ -60,7 +60,7 @@ export class UserService {
 
       return { sucess: true, user: updatedUser };
     } catch (error) {
-      return { sucess: false, error: 'Failed to update user' };
+      throw new HttpException('Failed to update user', 500);
     }
   }
 
