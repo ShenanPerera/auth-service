@@ -1,27 +1,49 @@
-import { Controller, UseGuards, Request, Post, Get } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { AuthService } from './auth.service';
-import { GoogleAuthGuard } from './utils/Guards';
-
+/* eslint-disable prettier/prettier */
+import { HttpService } from '@nestjs/axios';
+import { Controller, Headers, Post } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { UserService } from 'src/user/user.service';
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
-  // @UseGuards(LocalAuthGuard) ------> This is the guard that we are using to protect the login route-result = unauthorized
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  // This route is called when the user logs in with Google
   @Post('login')
-  async login(@Request() req) {
-    return this.authService.login(req.body);
-  }
+  async login(@Headers('access_token') accessToken: string): Promise<any> {
+    const userInfoUrl = `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`;
 
-  //OAUth2.0
+    try {
+      const response = await this.httpService.get(userInfoUrl).toPromise();
+      const userData = response.data;
 
-  @UseGuards(GoogleAuthGuard)
-  @Get('google/login')
-  handleGoogleLogin() {
-    return { msg: 'This route is protected by Google OAuth2.0' };
-  }
+      const userExists = await this.userService.findOne(userData.email);
+      if (userExists) {
+        const payload = {
+          sub: userExists.fullName,
+          role: userExists.role,
+        };
+        return {
+          success: false,
+          token: await this.jwtService.signAsync(payload),
+        };
+      }
+      try {
+        const response = await this.userService.create(userData);
 
-  @Get('google/redirect')
-  handleRedirect() {
-    return { msg: 'OK, you are redirected to the google login page.' };
+        if (response) {
+          return { success: true };
+        }
+      } catch (error) {
+        return { success: false, error: 'Failed to create new user' };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'Failed to fetch user data' };
+    }
   }
 }
