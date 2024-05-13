@@ -1,45 +1,98 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+/* eslint-disable prettier/prettier */
+import { Controller, Get, Body, Patch, Delete } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Role } from 'src/role/enums/role.enum';
-import { Roles } from 'src/role/role.decorator';
+import { HttpService } from '@nestjs/axios';
+import { CreateUserDto } from './dto/create-user.dto';
+import { Headers } from '@nestjs/common';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly httpService: HttpService,
+  ) {}
 
-  @Post()
-  create() {
-    return this.userService.create();
-  }
-
+  // This route is called when the user logs in with Google
   @Get()
-  @Roles(Role.ADMIN)
-  findAll() {
-    return this.userService.findAll();
+  async UserByAccessToken(@Body() accessToken: string) {
+    const userInfoUrl = `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`;
+    const response = await this.httpService.get(userInfoUrl).toPromise();
+    const userData = response.data;
+    return userData.email;
   }
 
-  @Get(':email')
-  findOne(@Param('email') email: string) {
-    return this.userService.findOne(email);
+  // This route is called when the user logs in with Google for the first time(new user)
+  @Patch('updateNewUser')
+  async newUserUpdate(
+    @Headers('access_token') accessToken: string,
+    @Body() userDto: CreateUserDto,
+  ): Promise<any> {
+    try {
+      const email = await this.UserByAccessToken(accessToken);
+
+      const userExists = await this.userService.findOne(email);
+      if (userExists) {
+        return this.userService.newUserUpdate(userExists.email, userDto);
+      }
+
+      return userExists;
+    } catch (error) {
+      return { success: false, error: 'Failed to fetch user data' };
+    }
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(id, updateUserDto);
+  // This route is called when admin needs to get all users
+  @Get('/getAllUsers')
+  async findAll(@Headers('access_token') accessToken: string): Promise<any> {
+    const email = await this.UserByAccessToken(accessToken);
+    const user = await this.userService.findOne(email);
+
+    if (user.role !== 'ADMIN') {
+      return { success: false, error: 'You are not allowed to access' };
+    }
+    try {
+      return this.userService.findAll();
+    } catch (error) {
+      return { success: false, error: 'Failed to fetch user data' };
+    }
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(id);
+  // This route is called when user needs to get his/her details
+  @Get('currentUser')
+  async findOne(@Headers('access_token') accessToken: string): Promise<any> {
+    const email = await this.UserByAccessToken(accessToken);
+    try {
+      return this.userService.findOne(email);
+    } catch (error) {
+      return { success: false, error: 'Failed to fetch user data' };
+    }
+  }
+
+  // This route is called when user needs to update his/her details
+  @Patch('updateUser')
+  async update(
+    @Headers('access_token') accessToken: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<any> {
+    const email = await this.UserByAccessToken(accessToken);
+    try {
+      return this.userService.update(email, updateUserDto);
+    } catch (error) {
+      return { success: false, error: 'Failed to update user data' };
+    }
+  }
+
+  // This route is called when user needs to delete his/her account
+  @Delete('deleteUser')
+  async remove(@Headers('access_token') accessToken: string): Promise<any> {
+    const email = await this.UserByAccessToken(accessToken);
+    const user = await this.userService.findOne(email);
+    const id = user._id;
+    try {
+      return this.userService.remove(id);
+    } catch (error) {
+      return { success: false, error: 'Failed to delete user data' };
+    }
   }
 }

@@ -9,13 +9,10 @@ export class User {
   @Prop({ unique: true })
   email: string;
 
-  @Prop({ required: true })
-  password: string;
-
-  @Prop({ required: true })
+  @Prop({ required: false })
   phone: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   role: Role;
 }
 
