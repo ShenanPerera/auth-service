@@ -27,6 +27,8 @@ export class UserController {
       throw new HttpException('Access token is required', 400);
     }
 
+    
+
     const userInfoUrl = `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`;
     const response = await this.httpService.get(userInfoUrl).toPromise();
     const userData = response.data;
